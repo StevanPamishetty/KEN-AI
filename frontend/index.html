@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KEN ASSISTANT</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --sidebar: #0f172a;
+      --surface: #000000;
+      --border: #1e293b;
+      --message-user: #0284c7;
+      --message-assistant: #1e293b;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--surface);
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app-container {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 18px;
+    }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #0ea5e9, #7dd3fc);
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .new-chat-btn {
+      margin: 1rem;
+      padding: 0.75rem 1rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 0.5rem;
+      color: #10b981;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .new-chat-btn:hover {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .chat-item {
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      margin: 0.25rem 0;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .chat-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .chat-item.active {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: #3b82f6;
+    }
+
+    .chat-title {
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.875rem;
+    }
+
+    .delete-btn {
+      opacity: 0;
+      transition: opacity 0.2s;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    .chat-item:hover .delete-btn {
+      opacity: 1;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+    }
+
+    .chat-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-title-edit {
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e2e8f0;
+      max-width: 300px;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      transition: background 0.2s;
+    }
+
+    .chat-title-edit:hover, .chat-title-edit:focus {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .edit-icon {
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 0.25rem;
+      transition: color 0.2s;
+      background: transparent;
+      border: none;
+    }
+
+    .edit-icon:hover {
+      color: #f1f5f9;
+    }
+
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 1rem 1.25rem;
+      border-radius: 1rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .message.user {
+      background: var(--message-user);
+      align-self: flex-end;
+      color: white;
+    }
+
+    .message.assistant {
+      background: var(--message-assistant);
+      align-self: flex-start;
+      color: #e2e8f0;
+    }
+
+    .input-area {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .input-field {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: #f1f5f9;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .input-field:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
+
+    .send-btn {
+      background: var(--primary);
+      color: white;
+      border-radius: 0.75rem;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+    }
+
+    .mic-btn {
+  background: #1e293b;
+  border-radius: 50%;
+  padding: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.mic-btn.listening {
+  background: #dc2626;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+    .send-btn.bg-red-600 { background: #dc2626; }
+
+    .footer {
+      padding: 0.5rem 1.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 80px; }
+      .app-title { display: none; }
+      .chat-title { max-width: 60px; }
+      .main-content { width: calc(100% - 80px); }
+      .message { max-width: 90%; }
+    }
+  </style>
+</head>
+<body class="flex">
+
+<!-- ================= AUTH CONTAINER ================= -->
+<div id="authContainer" class="w-full h-screen flex items-center justify-center bg-black">
+
+  <!-- LOGIN FORM -->
+  <div id="loginForm" class="bg-slate-900 p-8 rounded-2xl w-full max-w-md">
+    <div class="text-center mb-6">
+      <div class="flex justify-center mb-4">
+        <div class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
+          <span class="font-bold text-white text-xl">K</span>
+        </div>
+      </div>
+      <h1 class="text-2xl font-bold">KEN ASSISTANT</h1>
+      <p class="text-slate-400 mt-2">Your local AI companion</p>
+    </div>
+
+    <form id="loginFormEl" class="space-y-4">
+      <input type="email" id="loginEmail" placeholder="Email"
+        class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 focus:ring-2 focus:ring-cyan-500" required>
+
+      <input type="password" id="loginPassword" placeholder="Password"
+        class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 focus:ring-2 focus:ring-cyan-500" required>
+
+      <button type="submit"
+        class="w-full bg-cyan-600 hover:bg-cyan-700 py-3 rounded-lg font-medium transition">Login</button>
+
+      <div class="text-center mt-3">
+        <button type="button" id="showSignup" class="text-cyan-400 text-sm hover:underline">Create account</button>
+        <span class="text-slate-500 mx-2">•</span>
+        <button type="button" id="showReset" class="text-cyan-400 text-sm hover:underline">Forgot password?</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <div id="signupForm" class="bg-slate-900 p-8 rounded-2xl w-full max-w-md hidden">
+    <h2 class="text-xl font-bold text-center mb-4">Create Account</h2>
+
+    <form id="signupFormEl" class="space-y-4">
+      <input type="text" id="signupUsername" placeholder="Username"
+        class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 focus:ring-2 focus:ring-cyan-500" required>
+
+      <input type="email" id="signupEmail" placeholder="Email"
+        class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 focus:ring-2 focus:ring-cyan-500" required>
+
+      <input type="password" id="signupPassword" placeholder="Password"
+        class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 focus:ring-2 focus:ring-cyan-500" required>
+
+      <button type="submit"
+        class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg font-medium transition">Sign Up</button>
+
+      <button type="button" id="backToLogin"
+        class="w-full mt-2 text-slate-400 hover:text-white">Back to Login</button>
+    </form>
+  </div>
+
+  <!-- RESET PASSWORD -->
+  <div id="resetForm" class="bg-slate-900 p-8 rounded-2xl w-full max-w-md hidden">
+    <h2 class="text-xl font-bold text-center mb-4">Reset Password</h2>
+    <p class="text-slate-400 text-sm text-center mb-4">Enter your email to receive a reset link</p>
+
+    <form id="resetFormEl" class="space-y-4">
+      <input type="email" id="resetEmail" placeholder="Email"
+        class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 focus:ring-2 focus:ring-cyan-500" required>
+
+      <button type="submit"
+        class="w-full bg-amber-600 hover:bg-amber-700 py-3 rounded-lg font-medium transition">Send Reset Link</button>
+
+      <button type="button" id="backToLogin2"
+        class="w-full mt-2 text-slate-400 hover:text-white">Back to Login</button>
+    </form>
+  </div>
+
+</div> <!-- END AUTH -->
+
+<!-- ================= MAIN APP ================= -->
+<div id="appContainer" class="app-container" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">K</div>
+      <div class="app-title">KEN ASSISTANT</div>
+    </div>
+
+    <div class="new-chat-btn" id="newChatBtn">
+      <i class="fas fa-plus"></i> New Chat
+    </div>
+
+    <div id="chatHistory" class="chat-history"></div>
+
+    <button class="logout-btn" id="logoutBtn" style="background:transparent;border:none;">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <div class="chat-header">
+      <div class="flex items-center gap-2" style="display:flex;align-items:center;">
+        <input type="text" id="chatTitle" class="chat-title-edit" value="New Chat" onblur="saveChatTitle()" readonly />
+        <button id="editTitleBtn" class="edit-icon" title="Edit title">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+      </div>
+
+      <button id="micBtn" class="mic-btn" style="background:transparent;border:none;">
+        <i id="micIcon" class="fas fa-microphone"></i>
+      </button>
+    </div>
+
+    <div id="chatContainer" class="messages-container"></div>
+
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Message KEN ASSISTANT..." class="input-field" autofocus />
+
+      <button id="sendBtn" class="send-btn" title="Send">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+
+      <button id="stopBtn" class="send-btn bg-red-600" style="display:none; margin-left:10px;" title="Stop response">
+        <i class="fas fa-stop"></i>
+      </button>
+    </div>
+
+    <div class="footer">
+      KEN ASSISTANT runs 100% locally on your machine
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT (FULL LOGIC)
+============================================================ -->
+<script>
+  let currentChatId = null;
+  let abortController = null;
+
+  
+/* ============================
+   🎤 VOICE TO TEXT ENGINE
+============================ */
+const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let listening = false;
+
+if (SpeechAPI) {
+  recognizer = new SpeechAPI();
+  recognizer.lang = "en-US";
+  recognizer.interimResults = false;
+  recognizer.continuous = false;
+
+  recognizer.onstart = () => {
+    listening = true;
+    document.getElementById("micBtn").classList.add("listening");
+  };
+
+  recognizer.onend = () => {
+    listening = false;
+    document.getElementById("micBtn").classList.remove("listening");
+  };
+
+  recognizer.onerror = () => {
+    listening = false;
+    document.getElementById("micBtn").classList.remove("listening");
+  };
+
+  recognizer.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    document.getElementById("userInput").value = text;
+    sendMessage(); // AUTO-SEND
+  };
+}
+
+document.getElementById("micBtn").onclick = () => {
+  if (!recognizer) {
+    alert("Voice Recognition not supported in your browser.");
+    return;
+  }
+
+  if (!listening) recognizer.start();
+  else recognizer.stop();
+};
+
+  async function checkAuth() {
+    try {
+      const res = await fetch("http://localhost:8000/protected", {
+        credentials: "include"
+      });
+
+      if (res.ok) {
+        document.getElementById("authContainer").style.display = "none";
+        document.getElementById("appContainer").style.display = "flex";
+        await loadChatHistory();
+        await createNewChat();
+      } else {
+        showLoginForm();
+      }
+    } catch {
+      showLoginForm();
+    }
+  }
+
+  function showLoginForm() {
+    document.getElementById("authContainer").style.display = "flex";
+    document.getElementById("loginForm").style.display = "block";
+    document.getElementById("signupForm").style.display = "none";
+    document.getElementById("resetForm").style.display = "none";
+    document.getElementById("appContainer").style.display = "none";
+  }
+
+  /* ----------------- CREATE NEW CHAT ------------------ */
+  async function createNewChat() {
+    try {
+      const res = await fetch("http://localhost:8000/chat/new", {
+        method: "POST",
+        credentials: "include"
+      });
+
+      if (!res.ok) throw new Error("Create chat failed");
+      const data = await res.json();
+      currentChatId = data.chat_id;
+
+      document.getElementById("chatTitle").value = "New Chat";
+      document.getElementById("chatTitle").readOnly = true;
+
+      document.getElementById("chatContainer").innerHTML = "";
+      await loadChatHistory();
+    } catch (err) {
+      console.error("Failed to create chat", err);
+    }
+  }
+
+  /* ----------------- LOAD CHAT HISTORY ------------------ */
+  async function loadChatHistory() {
+    try {
+      const res = await fetch("http://localhost:8000/chat/history-list", {
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        console.warn("No history (unauth?)");
+        return;
+      }
+
+      const chats = await res.json();
+      const container = document.getElementById("chatHistory");
+      container.innerHTML = "";
+
+      chats.forEach(chat => {
+        const div = document.createElement("div");
+        div.className = `chat-item ${chat.id == currentChatId ? "active" : ""}`;
+
+        div.innerHTML = `
+          <div class="chat-title">${chat.title}</div>
+          <button class="delete-btn" title="Delete chat">
+            <i class="fas fa-trash text-xs"></i>
+          </button>
+        `;
+
+        div.onclick = () => loadChat(chat.id);
+        container.appendChild(div);
+
+        // delete chat handler
+        const btn = div.querySelector(".delete-btn");
+        if (btn) {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteChat(chat.id);
+          });
+        }
+      });
+
+    } catch (err) {
+      console.error("Failed to load chat history", err);
+    }
+  }
+
+  /* ----------------- LOAD CHAT ------------------ */
+  async function loadChat(chatId) {
+    currentChatId = chatId;
+
+    try {
+      const res = await fetch(`http://localhost:8000/chat/${chatId}`, {
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        console.warn("Load chat failed");
+        return;
+      }
+
+      const data = await res.json();
+
+      document.getElementById("chatTitle").value = data.title;
+      document.getElementById("chatTitle").readOnly = true;
+
+      const container = document.getElementById("chatContainer");
+      container.innerHTML = "";
+
+      (data.messages || []).forEach(msg => addMessage(msg.role, msg.content));
+
+      await loadChatHistory();
+
+    } catch (err) {
+      console.error("Failed to load chat", err);
+    }
+  }
+
+  /* ----------------- ADD MESSAGE ------------------ */
+  function addMessage(role, content) {
+    const container = document.getElementById("chatContainer");
+    const div = document.createElement("div");
+
+    div.className = `message ${role}`;
+
+    if (role === "assistant") {
+      div.innerHTML = marked.parse(content || "");
+    } else {
+      div.textContent = content;
+    }
+
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  /* ----------------- SEND MESSAGE WITH STREAM ------------------ */
+  async function sendMessage() {
+    const input = document.getElementById("userInput");
+    const message = input.value.trim();
+
+    if (!message || !currentChatId) return;
+    if (abortController) return;
+
+    addMessage("user", message);
+    input.value = "";
+
+    const assistantDiv = document.createElement("div");
+    assistantDiv.className = "message assistant";
+    assistantDiv.innerHTML = "";
+    document.getElementById("chatContainer").appendChild(assistantDiv);
+
+    // UI state
+    document.getElementById("sendBtn").style.display = "none";
+    document.getElementById("stopBtn").style.display = "inline-flex";
+    input.disabled = true;
+
+    abortController = new AbortController();
+    const signal = abortController.signal;
+
+    try {
+      const response = await fetch("http://localhost:8000/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chat_id: currentChatId, message }),
+        signal
+      });
+
+      if (!response.ok) {
+        const msg = await response.text();
+        assistantDiv.textContent = "ERROR: " + msg;
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        assistantDiv.innerHTML = marked.parse(buffer);
+
+        const container = document.getElementById("chatContainer");
+        container.scrollTop = container.scrollHeight;
+      }
+
+    } catch (err) {
+      if (err.name === "AbortError") {
+        assistantDiv.textContent = "❌ Response stopped.";
+      } else {
+        assistantDiv.textContent = "Network error: " + (err.message || err);
+        console.error(err);
+      }
+
+    } finally {
+      document.getElementById("sendBtn").style.display = "inline-flex";
+      document.getElementById("stopBtn").style.display = "none";
+      input.disabled = false;
+      abortController = null;
+    }
+  }
+
+  /* ----------------- STOP STREAM ------------------ */
+  document.getElementById("stopBtn").onclick = () => {
+    if (abortController) abortController.abort();
+  };
+
+  /* ----------------- ENTER TO SEND ------------------ */
+  document.getElementById("userInput").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!abortController) sendMessage();
+    }
+  });
+
+  /* ----------------- SAVE TITLE ------------------ */
+  async function saveChatTitle() {
+    const titleInput = document.getElementById("chatTitle");
+    const title = titleInput.value.trim() || "New Chat";
+
+    try {
+      await fetch("http://localhost:8000/chat/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chat_id: currentChatId, title })
+      });
+
+      titleInput.readOnly = true;
+      await loadChatHistory();
+
+    } catch (err) {
+      console.error("Failed to save chat title", err);
+    }
+  }
+
+  /* ----------------- DELETE CHAT ------------------ */
+  async function deleteChat(chatId) {
+    if (!confirm("Delete this chat?")) return;
+
+    try {
+      await fetch("http://localhost:8000/chat/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ chat_id: chatId })
+      });
+
+      if (chatId === currentChatId) {
+        await createNewChat();
+      } else {
+        await loadChatHistory();
+      }
+
+    } catch (err) {
+      console.error("Failed to delete chat", err);
+    }
+  }
+
+  /* ----------------- BUTTON HANDLERS ------------------ */
+  document.getElementById("newChatBtn").onclick = createNewChat;
+  document.getElementById("sendBtn").onclick = sendMessage;
+
+  document.getElementById("logoutBtn").onclick = () => {
+    // Clear cookie (frontend only); server-side logout could be added
+    document.cookie = "access_token=; Max-Age=0; path=/";
+    showLoginForm();
+  };
+
+  document.getElementById("editTitleBtn").onclick = () => {
+    const el = document.getElementById("chatTitle");
+    el.readOnly = false;
+    el.focus();
+  };
+
+  /* ----------------- LOGIN REQUEST ------------------ */
+  document.getElementById("loginFormEl").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+
+    try {
+      const res = await fetch("http://localhost:8000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password })
+      });
+
+      if (res.ok) {
+        // small delay to ensure cookie is set, then re-check auth
+        await checkAuth();
+      } else {
+        let errText = "Unknown error";
+        try { const j = await res.json(); errText = j.detail || JSON.stringify(j); } catch {}
+        alert("Login failed: " + errText);
+      }
+
+    } catch (err) {
+      alert("Network error: " + (err.message || err));
+    }
+  };
+
+  /* ----------------- SIGNUP ------------------ */
+  document.getElementById("signupFormEl").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("signupUsername").value;
+    const email = document.getElementById("signupEmail").value;
+    const password = document.getElementById("signupPassword").value;
+
+    try {
+      const res = await fetch("http://localhost:8000/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username, email, password })
+      });
+
+      if (res.ok) {
+        await checkAuth();
+      } else {
+        let errText = "Unknown error";
+        try { const j = await res.json(); errText = j.detail || JSON.stringify(j); } catch {}
+        alert("Signup failed: " + errText);
+      }
+
+    } catch (err) {
+      alert("Network error: " + (err.message || err));
+    }
+  };
+
+  /* ----------------- RESET FORM ------------------ */
+  document.getElementById("resetFormEl").onsubmit = (e) => {
+    e.preventDefault();
+    alert("Password reset would normally send an email.");
+    showLoginForm();
+  };
+
+  /* ----------------- SWITCH FORMS ------------------ */
+  document.getElementById("showSignup").onclick = () => {
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("signupForm").style.display = "block";
+  };
+
+  document.getElementById("backToLogin").onclick = showLoginForm;
+
+  document.getElementById("showReset").onclick = () => {
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("resetForm").style.display = "block";
+  };
+
+  document.getElementById("backToLogin2").onclick = showLoginForm;
+
+  /* ----------------- INIT APP ------------------ */
+  checkAuth();
+</script>
+
+</body>
+</html>
